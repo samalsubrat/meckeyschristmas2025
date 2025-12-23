@@ -540,17 +540,33 @@ app.post('/api/save-all', authenticateToken, async (req, res) => {
 
 // ==================== START SERVER ====================
 
-async function startServer() {
-    try {
-        await initDB();
+// Initialize DB on first request (for serverless)
+let dbInitialized = false;
+app.use(async (req, res, next) => {
+    if (!dbInitialized) {
+        try {
+            await initDB();
+            dbInitialized = true;
+        } catch (error) {
+            console.error('DB initialization error:', error);
+        }
+    }
+    next();
+});
+
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+    const PORT = process.env.PORT || 3000;
+    initDB().then(() => {
         app.listen(PORT, () => {
             console.log(`🚀 Server running on port ${PORT}`);
             console.log(`📡 API available at http://localhost:${PORT}/api`);
         });
-    } catch (error) {
+    }).catch(error => {
         console.error('Failed to start server:', error);
         process.exit(1);
-    }
+    });
 }
 
-startServer();
+// Export for Vercel serverless
+module.exports = app;
