@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meckeys CMS | Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+    input, textarea { transition: all 0.2s ease; }
+    input:focus, textarea:focus { outline: none; border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1); }
+    
+    /* Dragging Styles */
+    .draggable-item { cursor: grab; }
+    .draggable-item.dragging { opacity: 0.5; border: 2px dashed #94a3b8; background: #f8fafc; }
+    .drag-handle { cursor: grab; }
+    .drag-handle:active { cursor: grabbing; }
+     .pattern2 {
+            background-image: repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.13), rgba(0, 0, 0, 0.199) 2px, transparent 2px, transparent 6px);
+            background-size: 4px 4px;
+        }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen pb-40">
+  
+  <!-- Login Modal -->
+  <div id="login-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md mx-4">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-3 h-3 rounded-full bg-red-600"></div>
+        <h1 class="font-semibold text-slate-900">Meckeys CMS</h1>
+      </div>
+      <h2 class="text-2xl font-bold text-slate-900 mb-2">Admin Login</h2>
+      <p class="text-slate-500 text-sm mb-6">Enter your credentials to access the CMS</p>
+      
+      <form id="login-form" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Username</label>
+          <input type="text" id="login-username" class="w-full px-4 py-3 border border-slate-200 rounded-lg text-slate-900 focus:ring-2 focus:ring-red-500" placeholder="admin" required>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Password</label>
+          <input type="password" id="login-password" class="w-full px-4 py-3 border border-slate-200 rounded-lg text-slate-900 focus:ring-2 focus:ring-red-500" placeholder="••••••••" required>
+        </div>
+        <div id="login-error" class="hidden text-red-500 text-sm bg-red-50 p-3 rounded-lg"></div>
+        <button type="submit" id="login-btn" class="w-full bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-slate-900/10">
+          Sign In
+        </button>
+      </form>
+    </div>
+  </div>
+  
+  <div id="app" class="hidden">
+    <header class="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
+      <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-3 h-3 rounded-full bg-red-600"></div>
+          <h1 class="font-semibold text-slate-900">Meckeys CMS</h1>
+        </div>
+        <div class="flex items-center gap-4">
+          <span id="user-display" class="text-sm text-slate-500"></span>
+          <a href="index.html" class="text-sm text-slate-500 hover:text-slate-900">View Site</a>
+          <button onclick="saveData()" class="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-slate-900/10">Save Changes</button>
+          <button onclick="logout()" class="text-sm text-red-500 hover:text-red-700 font-medium">Logout</button>
+        </div>
+      </div>
+    </header>
+    
+    <main class="max-w-3xl mx-auto px-6 py-12 space-y-8">
+      
+      <section class="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
+        <h2 class="text-sm uppercase tracking-wide font-bold text-slate-400 mb-6">Global Settings</h2>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Hero Headline</label>
+            <textarea id="heroHeadline" rows="2" class="w-full px-4 py-2 border border-slate-200 rounded-lg text-slate-900 resize-none font-medium"></textarea>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Hero Subtext</label>
+            <input type="text" id="heroSubtext" class="w-full px-4 py-2 border border-slate-200 rounded-lg text-slate-900" />
+          </div>
+        </div>
+      </section>
+      
+      <div id="sections-container" class="space-y-6">
+        </div>
+
+      <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-200 border-dashed">
+        <button onclick="addSection('grid')" class="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-slate-300 rounded-2xl hover:border-slate-400 hover:bg-slate-100 transition-all text-slate-500 group">
+            <svg class="w-6 h-6 group-hover:text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+            <span class="font-medium text-sm group-hover:text-slate-700">Add Product Grid</span>
+        </button>
+        <button onclick="addSection('spotlight')" class="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-slate-300 rounded-2xl hover:border-slate-400 hover:bg-slate-100 transition-all text-slate-500 group">
+            <svg class="w-6 h-6 group-hover:text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+            <span class="font-medium text-sm group-hover:text-slate-700">Add Spotlight</span>
+        </button>
+      </div>
+
+    </main>
+  </div>
+  
+  <script>
+    // --- API Configuration ---
+    const API_URL = 'http://localhost:3000/api'; // Change this to your Railway URL
+    
+    // --- Auth State ---
+    let authToken = localStorage.getItem('meckeys_auth_token');
+    let currentUser = JSON.parse(localStorage.getItem('meckeys_auth_user') || 'null');
+    
+    // --- Initial Data ---
+    const defaultData = {
+        hero: { title: "Precision meets \nPerfection.", subtitle: "Upgrade your workspace with our limited winter collection." },
+        sections: [
+            {
+                id: 'sec_' + Date.now(), 
+                type: 'spotlight',
+                data: { title: "The Moonlight Series", subtext: "Typing Nirvana.", image: "https://images.unsplash.com/photo-1595225476474-87563907a212?w=1600&q=80" }
+            },
+            {
+                id: 'sec_' + (Date.now() + 1), 
+                type: 'grid',
+                data: { title: "Blockbuster Deals", gridColumns: 0, products: [
+                    { name: "Keychron Q1", oldPrice: 220, newPrice: 189, image: "https://images.unsplash.com/photo-1587829741301-dc798b91a603?w=800&q=80", link: "#" },
+                    { name: "GMMK Pro", oldPrice: 349, newPrice: 299, image: "https://images.unsplash.com/photo-1626218174397-cc7b47570180?w=800&q=80", link: "#" }
+                ]}
+            }
+        ]
+    };
+
+    let appData = null;
+
+    // --- Auth Functions ---
+    async function login(username, password) {
+        const response = await fetch(`${API_URL}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Login failed');
+        }
+        
+        const data = await response.json();
+        authToken = data.token;
+        currentUser = data.user;
+        
+        localStorage.setItem('meckeys_auth_token', authToken);
+        localStorage.setItem('meckeys_auth_user', JSON.stringify(currentUser));
+        
+        return data;
+    }
+
+    async function verifyToken() {
+        if (!authToken) return false;
+        
+        try {
+            const response = await fetch(`${API_URL}/auth/verify`, {
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            });
+            return response.ok;
+        } catch {
+            return false;
+        }
+    }
+
+    function logout() {
+        authToken = null;
+        currentUser = null;
+        localStorage.removeItem('meckeys_auth_token');
+        localStorage.removeItem('meckeys_auth_user');
+        document.getElementById('app').classList.add('hidden');
+        document.getElementById('login-modal').classList.remove('hidden');
+    }
+
+    function getAuthHeaders() {
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+        };
+    }
+
+    // --- Login Form Handler ---
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const username = document.getElementById('login-username').value;
+        const password = document.getElementById('login-password').value;
+        const errorEl = document.getElementById('login-error');
+        const btn = document.getElementById('login-btn');
+        
+        errorEl.classList.add('hidden');
+        btn.innerText = 'Signing in...';
+        btn.disabled = true;
+        
+        try {
+            await login(username, password);
+            document.getElementById('login-modal').classList.add('hidden');
+            document.getElementById('app').classList.remove('hidden');
+            document.getElementById('user-display').textContent = `Welcome, ${currentUser.username}`;
+            initApp();
+        } catch (error) {
+            errorEl.textContent = error.message;
+            errorEl.classList.remove('hidden');
+        } finally {
+            btn.innerText = 'Sign In';
+            btn.disabled = false;
+        }
+    });
+
+    // --- Check Auth on Load ---
+    (async function checkAuth() {
+        if (await verifyToken()) {
+            document.getElementById('login-modal').classList.add('hidden');
+            document.getElementById('app').classList.remove('hidden');
+            document.getElementById('user-display').textContent = `Welcome, ${currentUser?.username || 'Admin'}`;
+            initApp();
+        }
+    })();
+
+    // --- Fetch data from API ---
+    async function fetchPageData() {
+        try {
+            const response = await fetch(`${API_URL}/page-data`);
+            if (!response.ok) throw new Error('API request failed');
+            return await response.json();
+        } catch (error) {
+            console.warn('Failed to fetch from API, using localStorage fallback:', error);
+            return JSON.parse(localStorage.getItem('meckeys_v2_data')) || defaultData;
+        }
+    }
+    
+    async function initApp() {
+        appData = await fetchPageData();
+        renderAll();
+    }
+
+    // --- Logic ---
+
+    function renderAll() {
+        // Hero
+        document.getElementById('heroHeadline').value = appData.hero.title;
+        document.getElementById('heroSubtext').value = appData.hero.subtitle;
+
+        // Sections
+        const container = document.getElementById('sections-container');
+        container.innerHTML = '';
+        
+        appData.sections.forEach((section, index) => {
+            const el = document.createElement('div');
+            el.className = 'draggable-item bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden';
+            el.setAttribute('draggable', 'true');
+            el.dataset.index = index;
+
+            // Header for the Section Card
+            const headerHtml = `
+                <div class="bg-slate-50 px-6 py-3 border-b border-slate-200 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="drag-handle cursor-grab p-1 hover:bg-slate-200 rounded text-slate-400">
+                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
+                        </div>
+                        <span class="text-xs font-bold uppercase tracking-wide text-slate-500">${section.type === 'grid' ? 'Product Grid' : 'Spotlight Hero'}</span>
+                    </div>
+                    <button onclick="deleteSection(${index})" class="text-red-500 hover:text-red-700 text-xs font-medium uppercase tracking-wide">Remove Section</button>
+                </div>
+            `;
+
+            let contentHtml = '';
+
+            // Generate Inputs based on Type
+            if (section.type === 'spotlight') {
+                contentHtml = `
+                <div class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Heading</label>
+                        <input type="text" value="${section.data.title}" oninput="updateSectionData(${index}, 'title', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm">
+                    </div>
+                     <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Subtext</label>
+                        <input type="text" value="${section.data.subtext}" oninput="updateSectionData(${index}, 'subtext', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm">
+                    </div>
+                     <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Image URL</label>
+                        <input type="text" value="${section.data.image}" oninput="updateSectionData(${index}, 'image', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm font-mono text-slate-500">
+                    </div>
+                </div>`;
+            } else if (section.type === 'grid') {
+                const productsHtml = section.data.products.map((p, pIndex) => `
+                    <div class="relative bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4">
+                        <button onclick="removeProduct(${index}, ${pIndex})" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+
+                        <div class="flex gap-4 items-start">
+                            <div class="w-20 h-20 shrink-0 bg-white rounded-lg border border-slate-200 overflow-hidden flex items-center justify-center">
+                                <img src="${p.image}" class="w-full h-full object-cover" onerror="this.style.display='none'">
+                                <svg class="w-6 h-6 text-slate-300 absolute" style="z-index:-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                            </div>
+
+                            <div class="flex-1 space-y-3">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Image URL</label>
+                                    <input type="text" value="${p.image}" oninput="updateProduct(${index}, ${pIndex}, 'image', this.value)" class="w-full p-2 text-xs border border-slate-200 rounded text-slate-600 font-mono focus:bg-white bg-white/50" placeholder="https://...">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Product Name</label>
+                                    <input type="text" value="${p.name}" oninput="updateProduct(${index}, ${pIndex}, 'name', this.value)" class="w-full p-2 text-sm border border-slate-200 rounded font-medium focus:bg-white bg-white/50" placeholder="Product Name">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Product Link</label>
+                                    <input type="url" value="${p.link || ''}" oninput="updateProduct(${index}, ${pIndex}, 'link', this.value)" class="w-full p-2 text-xs border border-slate-200 rounded text-slate-600 font-mono focus:bg-white bg-white/50" placeholder="https://meckeys.com/product/...">
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Old Price ($)</label>
+                                        <input type="number" value="${p.oldPrice}" oninput="updateProduct(${index}, ${pIndex}, 'oldPrice', this.value)" class="w-full p-2 text-sm border border-slate-200 rounded focus:bg-white bg-white/50" placeholder="0.00">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Sale Price ($)</label>
+                                        <input type="number" value="${p.newPrice}" oninput="updateProduct(${index}, ${pIndex}, 'newPrice', this.value)" class="w-full p-2 text-sm border border-slate-200 rounded font-semibold text-red-600 focus:bg-white bg-white/50" placeholder="0.00">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                contentHtml = `
+                <div class="p-6">
+                    <div class="mb-6 grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Section Title</label>
+                            <input type="text" value="${section.data.title}" oninput="updateSectionData(${index}, 'title', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm font-semibold">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Items Per Row</label>
+                            <select onchange="updateSectionData(${index}, 'gridColumns', parseInt(this.value))" class="w-full px-3 py-2 border border-slate-200 rounded text-sm bg-white">
+                                <option value="0" ${(section.data.gridColumns || 0) === 0 ? 'selected' : ''}>Auto (based on items)</option>
+                                <option value="1" ${section.data.gridColumns === 1 ? 'selected' : ''}>1 item</option>
+                                <option value="2" ${section.data.gridColumns === 2 ? 'selected' : ''}>2 items</option>
+                                <option value="3" ${section.data.gridColumns === 3 ? 'selected' : ''}>3 items</option>
+                                <option value="4" ${section.data.gridColumns === 4 ? 'selected' : ''}>4 items</option>
+                                <option value="5" ${section.data.gridColumns === 5 ? 'selected' : ''}>5 items</option>
+                                <option value="6" ${section.data.gridColumns === 6 ? 'selected' : ''}>6 items</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-1">
+                        ${productsHtml}
+                    </div>
+
+                    <button onclick="addProduct(${index})" class="mt-4 w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 text-sm font-medium hover:border-slate-400 hover:text-slate-600 transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        Add Another Product
+                    </button>
+                </div>`;
+            }
+
+            el.innerHTML = headerHtml + contentHtml;
+            container.appendChild(el);
+
+            // Add Drag Events
+            addDragEvents(el);
+        });
+    }
+
+    // --- State Management ---
+
+    function addSection(type) {
+        const newSection = {
+            id: 'sec_' + Date.now(),
+            type: type,
+            data: type === 'spotlight' 
+                ? { title: "New Spotlight", subtext: "Description here", image: "https://images.unsplash.com/photo-1595225476474-87563907a212?w=1600&q=80" }
+                : { title: "New Collection", gridColumns: 0, products: [
+                    { name: "New Product", oldPrice: 0, newPrice: 0, image: "https://via.placeholder.com/400" }
+                ]}
+        };
+        appData.sections.push(newSection);
+        renderAll();
+    }
+
+    function deleteSection(index) {
+        if(confirm("Delete this section?")) {
+            appData.sections.splice(index, 1);
+            renderAll();
+        }
+    }
+
+    // NEW: Add a blank product to a specific section
+    function addProduct(sectionIndex) {
+        appData.sections[sectionIndex].data.products.push({
+            name: "New Product",
+            oldPrice: 100,
+            newPrice: 99,
+            image: "https://via.placeholder.com/400",
+            link: "#"
+        });
+        renderAll();
+    }
+
+    // NEW: Remove a specific product from a section
+    function removeProduct(sectionIndex, productIndex) {
+        if (confirm("Remove this product?")) {
+            appData.sections[sectionIndex].data.products.splice(productIndex, 1);
+            renderAll();
+        }
+    }
+
+    function updateSectionData(sectionIndex, key, value) {
+        appData.sections[sectionIndex].data[key] = value;
+    }
+
+    function updateProduct(sectionIndex, productIndex, key, value) {
+        appData.sections[sectionIndex].data.products[productIndex][key] = value;
+        // Re-render only if image changes to show preview, otherwise focus is lost
+        if(key === 'image') {
+           // We don't full render to keep focus, but for simplicity in this version we rely on the img onerror handler or manual DOM update if needed. 
+           // For this specific request, the DOM update on 'input' is sufficient for data, but preview might lag until next render or we can force it.
+           // To keep it simple and stable:
+           const imgEl = document.querySelectorAll('#sections-container > div')[sectionIndex].querySelectorAll('img')[productIndex];
+           if(imgEl) imgEl.src = value;
+        }
+    }
+
+    async function saveData() {
+        appData.hero.title = document.getElementById('heroHeadline').value;
+        appData.hero.subtitle = document.getElementById('heroSubtext').value;
+        
+        const btn = document.querySelector('button[onclick="saveData()"]');
+        const originalText = btn.innerText;
+        btn.innerText = "Saving...";
+        btn.disabled = true;
+        
+        try {
+            // Save to API with auth token
+            const response = await fetch(`${API_URL}/save-all`, {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify(appData)
+            });
+            
+            if (response.status === 401 || response.status === 403) {
+                logout();
+                alert('Session expired. Please login again.');
+                return;
+            }
+            
+            if (!response.ok) throw new Error('API save failed');
+            
+            // Also save to localStorage as backup
+            localStorage.setItem('meckeys_v2_data', JSON.stringify(appData));
+            
+            // Visual Feedback - Success
+            btn.innerText = "Saved!";
+            btn.classList.remove("bg-slate-900");
+            btn.classList.add("bg-green-600");
+        } catch (error) {
+            console.error('Error saving to API:', error);
+            // Fallback to localStorage only
+            localStorage.setItem('meckeys_v2_data', JSON.stringify(appData));
+            
+            btn.innerText = "Saved (Offline)";
+            btn.classList.remove("bg-slate-900");
+            btn.classList.add("bg-yellow-600");
+        }
+        
+        btn.disabled = false;
+        setTimeout(() => {
+            btn.innerText = originalText;
+            btn.classList.remove("bg-green-600", "bg-yellow-600");
+            btn.classList.add("bg-slate-900");
+        }, 2000);
+    }
+
+    // --- Drag and Drop Logic ---
+    let dragSrcEl = null;
+
+    function addDragEvents(item) {
+        item.addEventListener('dragstart', handleDragStart);
+        item.addEventListener('dragover', handleDragOver);
+        item.addEventListener('dragenter', handleDragEnter);
+        item.addEventListener('dragleave', handleDragLeave);
+        item.addEventListener('drop', handleDrop);
+        item.addEventListener('dragend', handleDragEnd);
+    }
+
+    function handleDragStart(e) {
+        dragSrcEl = this;
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/html', this.innerHTML);
+        this.classList.add('dragging');
+    }
+
+    function handleDragOver(e) {
+        if (e.preventDefault) e.preventDefault();
+        return false;
+    }
+
+    function handleDragEnter(e) {
+        this.classList.add('border-blue-400');
+    }
+
+    function handleDragLeave(e) {
+        this.classList.remove('border-blue-400');
+    }
+
+    function handleDrop(e) {
+        if (e.stopPropagation) e.stopPropagation();
+
+        if (dragSrcEl !== this) {
+            const srcIndex = parseInt(dragSrcEl.dataset.index);
+            const targetIndex = parseInt(this.dataset.index);
+
+            const itemToMove = appData.sections[srcIndex];
+            appData.sections.splice(srcIndex, 1);
+            appData.sections.splice(targetIndex, 0, itemToMove);
+
+            renderAll();
+        }
+        return false;
+    }
+
+    function handleDragEnd(e) {
+        this.classList.remove('dragging');
+        let items = document.querySelectorAll('.draggable-item');
+        items.forEach(function (item) {
+            item.classList.remove('border-blue-400');
+        });
+    }
+
+  </script>
+</body>
+</html>
