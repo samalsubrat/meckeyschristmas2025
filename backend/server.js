@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
-const { sql, initDB } = require('./db');
+const { pool, initDB } = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -49,7 +49,7 @@ app.post('/api/auth/login', async (req, res) => {
         }
 
         // Find user
-        const users = await sql`SELECT * FROM users WHERE username = ${username}`;
+        const [users] = await pool.execute('SELECT * FROM users WHERE username = ?', [username]);
         if (users.length === 0) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
@@ -91,7 +91,7 @@ app.put('/api/auth/password', authenticateToken, async (req, res) => {
         const { currentPassword, newPassword } = req.body;
 
         // Get current user
-        const users = await sql`SELECT * FROM users WHERE id = ${req.user.id}`;
+        const [users] = await pool.execute('SELECT * FROM users WHERE id = ?', [req.user.id]);
         if (users.length === 0) {
             return res.status(404).json({ error: 'User not found' });
         }
@@ -104,11 +104,10 @@ app.put('/api/auth/password', authenticateToken, async (req, res) => {
 
         // Hash and update new password
         const hashedPassword = await bcrypt.hash(newPassword, 10);
-        await sql`
-            UPDATE users 
-            SET password_hash = ${hashedPassword}, updated_at = CURRENT_TIMESTAMP
-            WHERE id = ${req.user.id}
-        `;
+        await pool.execute(
+            'UPDATE users SET password_hash = ? WHERE id = ?',
+            [hashedPassword, req.user.id]
+        );
 
         res.json({ message: 'Password updated successfully' });
     } catch (error) {
@@ -129,11 +128,11 @@ app.get('/api/health', (req, res) => {
 // Get hero data
 app.get('/api/hero', async (req, res) => {
     try {
-        const hero = await sql`SELECT * FROM hero LIMIT 1`;
-        if (hero.length === 0) {
+        const [rows] = await pool.execute('SELECT * FROM hero LIMIT 1');
+        if (rows.length === 0) {
             return res.json({ title: '', subtitle: '' });
         }
-        res.json(hero[0]);
+        res.json(rows[0]);
     } catch (error) {
         console.error('Error fetching hero:', error);
         res.status(500).json({ error: 'Failed to fetch hero data' });
@@ -144,13 +143,12 @@ app.get('/api/hero', async (req, res) => {
 app.put('/api/hero', authenticateToken, async (req, res) => {
     try {
         const { title, subtitle } = req.body;
-        const result = await sql`
-            UPDATE hero 
-            SET title = ${title}, subtitle = ${subtitle}, updated_at = CURRENT_TIMESTAMP
-            WHERE id = 1
-            RETURNING *
-        `;
-        res.json(result[0]);
+        await pool.execute(
+            'UPDATE hero SET title = ?, subtitle = ? WHERE id = 1',
+            [title, subtitle]
+        );
+        const [rows] = await pool.execute('SELECT * FROM hero WHERE id = 1');
+        res.json(rows[0]);
     } catch (error) {
         console.error('Error updating hero:', error);
         res.status(500).json({ error: 'Failed to update hero data' });
@@ -162,27 +160,32 @@ app.put('/api/hero', authenticateToken, async (req, res) => {
 // Get all sections with their data
 app.get('/api/sections', async (req, res) => {
     try {
-        const sections = await sql`
-            SELECT * FROM sections ORDER BY sort_order ASC
-        `;
+        const [sections] = await pool.execute('SELECT * FROM sections ORDER BY sort_order ASC');
 
         const fullSections = await Promise.all(sections.map(async (section) => {
             if (section.type === 'spotlight') {
-                const data = await sql`
-                    SELECT * FROM spotlight_data WHERE section_id = ${section.id}
-                `;
+                const [data] = await pool.execute(
+                    'SELECT * FROM spotlight_data WHERE section_id = ?',
+                    [section.id]
+                );
                 return {
                     id: section.id,
                     type: section.type,
                     data: data[0] || { title: '', subtext: '', image: '' }
                 };
             } else if (section.type === 'grid') {
-                const gridData = await sql`
-                    SELECT * FROM grid_data WHERE section_id = ${section.id}
-                `;
-                const products = gridData[0] ? await sql`
-                    SELECT * FROM products WHERE grid_id = ${gridData[0].id} ORDER BY sort_order ASC
-                ` : [];
+                const [gridData] = await pool.execute(
+                    'SELECT * FROM grid_data WHERE section_id = ?',
+                    [section.id]
+                );
+                let products = [];
+                if (gridData[0]) {
+                    const [productRows] = await pool.execute(
+                        'SELECT * FROM products WHERE grid_id = ? ORDER BY sort_order ASC',
+                        [gridData[0].id]
+                    );
+                    products = productRows;
+                }
 
                 return {
                     id: section.id,
@@ -215,16 +218,17 @@ app.get('/api/sections', async (req, res) => {
 app.get('/api/page-data', async (req, res) => {
     try {
         // Get hero
-        const hero = await sql`SELECT * FROM hero LIMIT 1`;
+        const [heroRows] = await pool.execute('SELECT * FROM hero LIMIT 1');
         
         // Get sections
-        const sections = await sql`SELECT * FROM sections ORDER BY sort_order ASC`;
+        const [sections] = await pool.execute('SELECT * FROM sections ORDER BY sort_order ASC');
 
         const fullSections = await Promise.all(sections.map(async (section) => {
             if (section.type === 'spotlight') {
-                const data = await sql`
-                    SELECT * FROM spotlight_data WHERE section_id = ${section.id}
-                `;
+                const [data] = await pool.execute(
+                    'SELECT * FROM spotlight_data WHERE section_id = ?',
+                    [section.id]
+                );
                 return {
                     id: section.id,
                     type: section.type,
@@ -235,12 +239,18 @@ app.get('/api/page-data', async (req, res) => {
                     } : { title: '', subtext: '', image: '' }
                 };
             } else if (section.type === 'grid') {
-                const gridData = await sql`
-                    SELECT * FROM grid_data WHERE section_id = ${section.id}
-                `;
-                const products = gridData[0] ? await sql`
-                    SELECT * FROM products WHERE grid_id = ${gridData[0].id} ORDER BY sort_order ASC
-                ` : [];
+                const [gridData] = await pool.execute(
+                    'SELECT * FROM grid_data WHERE section_id = ?',
+                    [section.id]
+                );
+                let products = [];
+                if (gridData[0]) {
+                    const [productRows] = await pool.execute(
+                        'SELECT * FROM products WHERE grid_id = ? ORDER BY sort_order ASC',
+                        [gridData[0].id]
+                    );
+                    products = productRows;
+                }
 
                 return {
                     id: section.id,
@@ -263,7 +273,7 @@ app.get('/api/page-data', async (req, res) => {
         }));
 
         res.json({
-            hero: hero[0] || { title: '', subtitle: '' },
+            hero: heroRows[0] || { title: '', subtitle: '' },
             sections: fullSections
         });
     } catch (error) {
@@ -279,33 +289,32 @@ app.post('/api/sections', authenticateToken, async (req, res) => {
         const sectionId = 'sec_' + Date.now();
         
         // Get max sort order
-        const maxOrder = await sql`SELECT COALESCE(MAX(sort_order), 0) as max FROM sections`;
-        const sortOrder = parseInt(maxOrder[0].max) + 1;
+        const [maxRows] = await pool.execute('SELECT COALESCE(MAX(sort_order), 0) as max FROM sections');
+        const sortOrder = parseInt(maxRows[0].max) + 1;
 
         // Insert section
-        await sql`
-            INSERT INTO sections (id, type, sort_order) 
-            VALUES (${sectionId}, ${type}, ${sortOrder})
-        `;
+        await pool.execute(
+            'INSERT INTO sections (id, type, sort_order) VALUES (?, ?, ?)',
+            [sectionId, type, sortOrder]
+        );
 
         // Insert default data based on type
         if (type === 'spotlight') {
-            await sql`
-                INSERT INTO spotlight_data (section_id, title, subtext, image)
-                VALUES (${sectionId}, 'New Spotlight', 'Description here', 'https://images.unsplash.com/photo-1595225476474-87563907a212?w=1600&q=80')
-            `;
+            await pool.execute(
+                'INSERT INTO spotlight_data (section_id, title, subtext, image) VALUES (?, ?, ?, ?)',
+                [sectionId, 'New Spotlight', 'Description here', 'https://images.unsplash.com/photo-1595225476474-87563907a212?w=1600&q=80']
+            );
         } else if (type === 'grid') {
-            const gridResult = await sql`
-                INSERT INTO grid_data (section_id, title, grid_columns)
-                VALUES (${sectionId}, 'New Collection', 0)
-                RETURNING id
-            `;
+            const [gridResult] = await pool.execute(
+                'INSERT INTO grid_data (section_id, title, grid_columns) VALUES (?, ?, ?)',
+                [sectionId, 'New Collection', 0]
+            );
             
             // Add a default product
-            await sql`
-                INSERT INTO products (grid_id, name, old_price, new_price, image, sort_order)
-                VALUES (${gridResult[0].id}, 'New Product', 100, 99, 'https://via.placeholder.com/400', 0)
-            `;
+            await pool.execute(
+                'INSERT INTO products (grid_id, name, old_price, new_price, image, link, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                [gridResult.insertId, 'New Product', 100, 99, 'https://via.placeholder.com/400', '#', 0]
+            );
         }
 
         res.json({ id: sectionId, type, message: 'Section created successfully' });
@@ -321,9 +330,10 @@ app.put('/api/sections/reorder', authenticateToken, async (req, res) => {
         const { sections } = req.body; // Array of { id, sort_order }
         
         for (const section of sections) {
-            await sql`
-                UPDATE sections SET sort_order = ${section.sort_order} WHERE id = ${section.id}
-            `;
+            await pool.execute(
+                'UPDATE sections SET sort_order = ? WHERE id = ?',
+                [section.sort_order, section.id]
+            );
         }
         
         res.json({ message: 'Sections reordered successfully' });
@@ -337,7 +347,7 @@ app.put('/api/sections/reorder', authenticateToken, async (req, res) => {
 app.delete('/api/sections/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
-        await sql`DELETE FROM sections WHERE id = ${id}`;
+        await pool.execute('DELETE FROM sections WHERE id = ?', [id]);
         res.json({ message: 'Section deleted successfully' });
     } catch (error) {
         console.error('Error deleting section:', error);
@@ -353,14 +363,13 @@ app.put('/api/spotlight/:sectionId', authenticateToken, async (req, res) => {
         const { sectionId } = req.params;
         const { title, subtext, image } = req.body;
         
-        const result = await sql`
-            UPDATE spotlight_data 
-            SET title = ${title}, subtext = ${subtext}, image = ${image}, updated_at = CURRENT_TIMESTAMP
-            WHERE section_id = ${sectionId}
-            RETURNING *
-        `;
+        await pool.execute(
+            'UPDATE spotlight_data SET title = ?, subtext = ?, image = ? WHERE section_id = ?',
+            [title, subtext, image, sectionId]
+        );
         
-        res.json(result[0]);
+        const [rows] = await pool.execute('SELECT * FROM spotlight_data WHERE section_id = ?', [sectionId]);
+        res.json(rows[0]);
     } catch (error) {
         console.error('Error updating spotlight:', error);
         res.status(500).json({ error: 'Failed to update spotlight' });
@@ -375,14 +384,13 @@ app.put('/api/grid/:sectionId', authenticateToken, async (req, res) => {
         const { sectionId } = req.params;
         const { title, gridColumns } = req.body;
         
-        const result = await sql`
-            UPDATE grid_data 
-            SET title = ${title}, grid_columns = ${gridColumns}, updated_at = CURRENT_TIMESTAMP
-            WHERE section_id = ${sectionId}
-            RETURNING *
-        `;
+        await pool.execute(
+            'UPDATE grid_data SET title = ?, grid_columns = ? WHERE section_id = ?',
+            [title, gridColumns, sectionId]
+        );
         
-        res.json(result[0]);
+        const [rows] = await pool.execute('SELECT * FROM grid_data WHERE section_id = ?', [sectionId]);
+        res.json(rows[0]);
     } catch (error) {
         console.error('Error updating grid:', error);
         res.status(500).json({ error: 'Failed to update grid' });
@@ -398,28 +406,32 @@ app.post('/api/grid/:sectionId/products', authenticateToken, async (req, res) =>
         const { name, oldPrice, newPrice, image, link } = req.body;
         
         // Get grid_id
-        const grid = await sql`SELECT id FROM grid_data WHERE section_id = ${sectionId}`;
-        if (grid.length === 0) {
+        const [gridRows] = await pool.execute('SELECT id FROM grid_data WHERE section_id = ?', [sectionId]);
+        if (gridRows.length === 0) {
             return res.status(404).json({ error: 'Grid not found' });
         }
         
         // Get max sort order
-        const maxOrder = await sql`SELECT COALESCE(MAX(sort_order), 0) as max FROM products WHERE grid_id = ${grid[0].id}`;
-        const sortOrder = parseInt(maxOrder[0].max) + 1;
+        const [maxRows] = await pool.execute(
+            'SELECT COALESCE(MAX(sort_order), 0) as max FROM products WHERE grid_id = ?',
+            [gridRows[0].id]
+        );
+        const sortOrder = parseInt(maxRows[0].max) + 1;
         
-        const result = await sql`
-            INSERT INTO products (grid_id, name, old_price, new_price, image, link, sort_order)
-            VALUES (${grid[0].id}, ${name}, ${oldPrice}, ${newPrice}, ${image}, ${link || '#'}, ${sortOrder})
-            RETURNING *
-        `;
+        const [result] = await pool.execute(
+            'INSERT INTO products (grid_id, name, old_price, new_price, image, link, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [gridRows[0].id, name, oldPrice, newPrice, image, link || '#', sortOrder]
+        );
+        
+        const [newProduct] = await pool.execute('SELECT * FROM products WHERE id = ?', [result.insertId]);
         
         res.json({
-            id: result[0].id,
-            name: result[0].name,
-            oldPrice: parseFloat(result[0].old_price),
-            newPrice: parseFloat(result[0].new_price),
-            image: result[0].image,
-            link: result[0].link || '#'
+            id: newProduct[0].id,
+            name: newProduct[0].name,
+            oldPrice: parseFloat(newProduct[0].old_price),
+            newPrice: parseFloat(newProduct[0].new_price),
+            image: newProduct[0].image,
+            link: newProduct[0].link || '#'
         });
     } catch (error) {
         console.error('Error adding product:', error);
@@ -433,20 +445,20 @@ app.put('/api/products/:id', authenticateToken, async (req, res) => {
         const { id } = req.params;
         const { name, oldPrice, newPrice, image, link } = req.body;
         
-        const result = await sql`
-            UPDATE products 
-            SET name = ${name}, old_price = ${oldPrice}, new_price = ${newPrice}, image = ${image}, link = ${link || '#'}, updated_at = CURRENT_TIMESTAMP
-            WHERE id = ${id}
-            RETURNING *
-        `;
+        await pool.execute(
+            'UPDATE products SET name = ?, old_price = ?, new_price = ?, image = ?, link = ? WHERE id = ?',
+            [name, oldPrice, newPrice, image, link || '#', id]
+        );
+        
+        const [rows] = await pool.execute('SELECT * FROM products WHERE id = ?', [id]);
         
         res.json({
-            id: result[0].id,
-            name: result[0].name,
-            oldPrice: parseFloat(result[0].old_price),
-            newPrice: parseFloat(result[0].new_price),
-            image: result[0].image,
-            link: result[0].link || '#'
+            id: rows[0].id,
+            name: rows[0].name,
+            oldPrice: parseFloat(rows[0].old_price),
+            newPrice: parseFloat(rows[0].new_price),
+            image: rows[0].image,
+            link: rows[0].link || '#'
         });
     } catch (error) {
         console.error('Error updating product:', error);
@@ -458,7 +470,7 @@ app.put('/api/products/:id', authenticateToken, async (req, res) => {
 app.delete('/api/products/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
-        await sql`DELETE FROM products WHERE id = ${id}`;
+        await pool.execute('DELETE FROM products WHERE id = ?', [id]);
         res.json({ message: 'Product deleted successfully' });
     } catch (error) {
         console.error('Error deleting product:', error);
@@ -470,54 +482,59 @@ app.delete('/api/products/:id', authenticateToken, async (req, res) => {
 
 // Save complete page data (from CMS) (protected)
 app.post('/api/save-all', authenticateToken, async (req, res) => {
+    const connection = await pool.getConnection();
     try {
         const { hero, sections } = req.body;
 
-        // Update hero
-        await sql`
-            UPDATE hero 
-            SET title = ${hero.title}, subtitle = ${hero.subtitle}, updated_at = CURRENT_TIMESTAMP
-            WHERE id = 1
-        `;
+        await connection.beginTransaction();
 
-        // Delete existing sections and recreate
-        await sql`DELETE FROM sections`;
+        // Update hero
+        await connection.execute(
+            'UPDATE hero SET title = ?, subtitle = ? WHERE id = 1',
+            [hero.title, hero.subtitle]
+        );
+
+        // Delete existing sections (cascade will delete related data)
+        await connection.execute('DELETE FROM sections');
 
         for (let i = 0; i < sections.length; i++) {
             const section = sections[i];
             
             // Insert section
-            await sql`
-                INSERT INTO sections (id, type, sort_order) 
-                VALUES (${section.id}, ${section.type}, ${i})
-            `;
+            await connection.execute(
+                'INSERT INTO sections (id, type, sort_order) VALUES (?, ?, ?)',
+                [section.id, section.type, i]
+            );
 
             if (section.type === 'spotlight') {
-                await sql`
-                    INSERT INTO spotlight_data (section_id, title, subtext, image)
-                    VALUES (${section.id}, ${section.data.title}, ${section.data.subtext}, ${section.data.image})
-                `;
+                await connection.execute(
+                    'INSERT INTO spotlight_data (section_id, title, subtext, image) VALUES (?, ?, ?, ?)',
+                    [section.id, section.data.title, section.data.subtext, section.data.image]
+                );
             } else if (section.type === 'grid') {
-                const gridResult = await sql`
-                    INSERT INTO grid_data (section_id, title, grid_columns)
-                    VALUES (${section.id}, ${section.data.title}, ${section.data.gridColumns || 0})
-                    RETURNING id
-                `;
+                const [gridResult] = await connection.execute(
+                    'INSERT INTO grid_data (section_id, title, grid_columns) VALUES (?, ?, ?)',
+                    [section.id, section.data.title, section.data.gridColumns || 0]
+                );
 
                 for (let j = 0; j < section.data.products.length; j++) {
                     const product = section.data.products[j];
-                    await sql`
-                        INSERT INTO products (grid_id, name, old_price, new_price, image, link, sort_order)
-                        VALUES (${gridResult[0].id}, ${product.name}, ${product.oldPrice}, ${product.newPrice}, ${product.image}, ${product.link || '#'}, ${j})
-                    `;
+                    await connection.execute(
+                        'INSERT INTO products (grid_id, name, old_price, new_price, image, link, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                        [gridResult.insertId, product.name, product.oldPrice, product.newPrice, product.image, product.link || '#', j]
+                    );
                 }
             }
         }
 
+        await connection.commit();
         res.json({ message: 'All data saved successfully' });
     } catch (error) {
+        await connection.rollback();
         console.error('Error saving all data:', error);
         res.status(500).json({ error: 'Failed to save data' });
+    } finally {
+        connection.release();
     }
 });
 
