@@ -174,7 +174,13 @@ app.get('/api/sections', async (req, res) => {
                 return {
                     id: section.id,
                     type: section.type,
-                    data: data[0] || { title: '', subtext: '', image: '' }
+                    data: data[0] ? {
+                        title: data[0].title,
+                        subtext: data[0].subtext,
+                        image: data[0].image,
+                        mediaType: data[0].media_type || 'image',
+                        media: data[0].media || data[0].image
+                    } : { title: '', subtext: '', image: '', mediaType: 'image', media: '' }
                 };
             } else if (section.type === 'grid') {
                 const gridData = await sql`
@@ -195,6 +201,8 @@ app.get('/api/sections', async (req, res) => {
                             name: p.name,
                             oldPrice: parseFloat(p.old_price),
                             newPrice: parseFloat(p.new_price),
+                            badge: p.badge || '',
+                            strikeOldPrice: p.strike_old_price !== false,
                             image: p.image,
                             link: p.link || '#'
                         }))
@@ -231,8 +239,10 @@ app.get('/api/page-data', async (req, res) => {
                     data: data[0] ? {
                         title: data[0].title,
                         subtext: data[0].subtext,
-                        image: data[0].image
-                    } : { title: '', subtext: '', image: '' }
+                        image: data[0].image,
+                        mediaType: data[0].media_type || 'image',
+                        media: data[0].media || data[0].image
+                    } : { title: '', subtext: '', image: '', mediaType: 'image', media: '' }
                 };
             } else if (section.type === 'grid') {
                 const gridData = await sql`
@@ -291,8 +301,8 @@ app.post('/api/sections', authenticateToken, async (req, res) => {
         // Insert default data based on type
         if (type === 'spotlight') {
             await sql`
-                INSERT INTO spotlight_data (section_id, title, subtext, image)
-                VALUES (${sectionId}, 'New Spotlight', 'Description here', 'https://images.unsplash.com/photo-1595225476474-87563907a212?w=1600&q=80')
+                INSERT INTO spotlight_data (section_id, title, subtext, image, media_type, media)
+                VALUES (${sectionId}, 'New Spotlight', 'Description here', 'https://images.unsplash.com/photo-1595225476474-87563907a212?w=1600&q=80', 'image', 'https://images.unsplash.com/photo-1595225476474-87563907a212?w=1600&q=80')
             `;
         } else if (type === 'grid') {
             const gridResult = await sql`
@@ -494,8 +504,8 @@ app.post('/api/save-all', authenticateToken, async (req, res) => {
 
             if (section.type === 'spotlight') {
                 await sql`
-                    INSERT INTO spotlight_data (section_id, title, subtext, image)
-                    VALUES (${section.id}, ${section.data.title}, ${section.data.subtext}, ${section.data.image})
+                    INSERT INTO spotlight_data (section_id, title, subtext, image, media_type, media)
+                    VALUES (${section.id}, ${section.data.title}, ${section.data.subtext}, ${section.data.media || section.data.image}, ${section.data.mediaType || 'image'}, ${section.data.media || section.data.image})
                 `;
             } else if (section.type === 'grid') {
                 const gridResult = await sql`
@@ -507,8 +517,8 @@ app.post('/api/save-all', authenticateToken, async (req, res) => {
                 for (let j = 0; j < section.data.products.length; j++) {
                     const product = section.data.products[j];
                     await sql`
-                        INSERT INTO products (grid_id, name, old_price, new_price, image, link, sort_order)
-                        VALUES (${gridResult[0].id}, ${product.name}, ${product.oldPrice}, ${product.newPrice}, ${product.image}, ${product.link || '#'}, ${j})
+                        INSERT INTO products (grid_id, name, old_price, new_price, image, link, badge, strike_old_price, sort_order)
+                        VALUES (${gridResult[0].id}, ${product.name}, ${product.oldPrice}, ${product.newPrice}, ${product.image}, ${product.link || '#'}, ${product.badge || ''}, ${product.strikeOldPrice !== false}, ${j})
                     `;
                 }
             }

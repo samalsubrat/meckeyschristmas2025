@@ -452,6 +452,22 @@
         appData.hero.title = document.getElementById('heroHeadline').value;
         appData.hero.subtitle = document.getElementById('heroSubtext').value;
         
+        // Sanitize data before sending - ensure numeric fields are numbers, not empty strings
+        const sanitizedData = JSON.parse(JSON.stringify(appData));
+        sanitizedData.sections.forEach(section => {
+            if (section.type === 'grid' && section.data.products) {
+                section.data.products.forEach(product => {
+                    // Ensure prices are numbers (default to 0 if empty)
+                    product.oldPrice = parseFloat(product.oldPrice) || 0;
+                    product.newPrice = parseFloat(product.newPrice) || 0;
+                    // Ensure strikeOldPrice is a boolean
+                    product.strikeOldPrice = product.strikeOldPrice !== false;
+                    // Ensure badge is a string
+                    product.badge = product.badge || '';
+                });
+            }
+        });
+        
         const btn = document.querySelector('button[onclick="saveData()"]');
         const originalText = btn.innerText;
         btn.innerText = "Saving...";
@@ -462,7 +478,7 @@
             const response = await fetch(`${API_URL}/save-all`, {
                 method: 'POST',
                 headers: getAuthHeaders(),
-                body: JSON.stringify(appData)
+                body: JSON.stringify(sanitizedData)
             });
             
             if (response.status === 401 || response.status === 403) {
@@ -473,8 +489,11 @@
             
             if (!response.ok) throw new Error('API save failed');
             
-            // Also save to localStorage as backup
-            localStorage.setItem('meckeys_v2_data', JSON.stringify(appData));
+            // Also save to localStorage as backup (use sanitized data)
+            localStorage.setItem('meckeys_v2_data', JSON.stringify(sanitizedData));
+            
+            // Update appData with sanitized values
+            appData = sanitizedData;
             
             // Visual Feedback - Success
             btn.innerText = "Saved!";
@@ -482,8 +501,9 @@
             btn.classList.add("bg-green-600");
         } catch (error) {
             console.error('Error saving to API:', error);
+            alert('Failed to save online: ' + error.message + '\nData saved locally as backup. Check console for details.');
             // Fallback to localStorage only
-            localStorage.setItem('meckeys_v2_data', JSON.stringify(appData));
+            localStorage.setItem('meckeys_v2_data', JSON.stringify(sanitizedData));
             
             btn.innerText = "Saved (Offline)";
             btn.classList.remove("bg-slate-900");
