@@ -109,20 +109,22 @@
     let currentUser = JSON.parse(localStorage.getItem('meckeys_auth_user') || 'null');
     
     // --- Initial Data ---
+    // Spotlight mediaType can be 'image' or 'video'. Use 'media' for the URL.
+    // Products can have a 'badge' field for the star discount badge (e.g. "60% OFF")
     const defaultData = {
         hero: { title: "Precision meets \nPerfection.", subtitle: "Upgrade your workspace with our limited winter collection." },
         sections: [
             {
                 id: 'sec_' + Date.now(), 
                 type: 'spotlight',
-                data: { title: "The Moonlight Series", subtext: "Typing Nirvana.", image: "https://images.unsplash.com/photo-1595225476474-87563907a212?w=1600&q=80" }
+                data: { title: "The Moonlight Series", subtext: "Typing Nirvana.", mediaType: "image", media: "https://images.unsplash.com/photo-1595225476474-87563907a212?w=1600&q=80" }
             },
             {
                 id: 'sec_' + (Date.now() + 1), 
                 type: 'grid',
                 data: { title: "Blockbuster Deals", gridColumns: 0, products: [
-                    { name: "Keychron Q1", oldPrice: 220, newPrice: 189, image: "https://images.unsplash.com/photo-1587829741301-dc798b91a603?w=800&q=80", link: "#" },
-                    { name: "GMMK Pro", oldPrice: 349, newPrice: 299, image: "https://images.unsplash.com/photo-1626218174397-cc7b47570180?w=800&q=80", link: "#" }
+                    { name: "Keychron Q1", oldPrice: 220, newPrice: 189, badge: "60% OFF", image: "https://images.unsplash.com/photo-1587829741301-dc798b91a603?w=800&q=80", link: "#" },
+                    { name: "GMMK Pro", oldPrice: 349, newPrice: 299, badge: "40% OFF", image: "https://images.unsplash.com/photo-1626218174397-cc7b47570180?w=800&q=80", link: "#" }
                 ]}
             }
         ]
@@ -271,6 +273,10 @@
 
             // Generate Inputs based on Type
             if (section.type === 'spotlight') {
+                // Support both new 'media' field and legacy 'image' field
+                const mediaSrc = section.data.media || section.data.image || '';
+                const mediaType = section.data.mediaType || 'image';
+                
                 contentHtml = `
                 <div class="p-6 space-y-4">
                     <div>
@@ -281,9 +287,16 @@
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Subtext</label>
                         <input type="text" value="${section.data.subtext}" oninput="updateSectionData(${index}, 'subtext', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm">
                     </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Background Type</label>
+                        <select onchange="updateSectionData(${index}, 'mediaType', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm bg-white">
+                            <option value="image" ${mediaType === 'image' ? 'selected' : ''}>Image</option>
+                            <option value="video" ${mediaType === 'video' ? 'selected' : ''}>Video (MP4)</option>
+                        </select>
+                    </div>
                      <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Image URL</label>
-                        <input type="text" value="${section.data.image}" oninput="updateSectionData(${index}, 'image', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm font-mono text-slate-500">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">${mediaType === 'video' ? 'Video' : 'Image'} URL</label>
+                        <input type="text" value="${mediaSrc}" oninput="updateSectionData(${index}, 'media', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm font-mono text-slate-500" placeholder="${mediaType === 'video' ? 'https://example.com/video.mp4' : 'https://example.com/image.jpg'}">
                     </div>
                 </div>`;
             } else if (section.type === 'grid') {
@@ -312,6 +325,10 @@
                                     <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Product Link</label>
                                     <input type="url" value="${p.link || ''}" oninput="updateProduct(${index}, ${pIndex}, 'link', this.value)" class="w-full p-2 text-xs border border-slate-200 rounded text-slate-600 font-mono focus:bg-white bg-white/50" placeholder="https://meckeys.com/product/...">
                                 </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">⭐ Badge Text (e.g. "60% OFF")</label>
+                                    <input type="text" value="${p.badge || ''}" oninput="updateProduct(${index}, ${pIndex}, 'badge', this.value)" class="w-full p-2 text-sm border border-slate-200 rounded font-semibold text-red-600 focus:bg-white bg-white/50" placeholder="60% OFF (leave empty for no badge)">
+                                </div>
                                 <div class="grid grid-cols-2 gap-3">
                                     <div>
                                         <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Old Price ($)</label>
@@ -321,6 +338,10 @@
                                         <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Sale Price ($)</label>
                                         <input type="number" value="${p.newPrice}" oninput="updateProduct(${index}, ${pIndex}, 'newPrice', this.value)" class="w-full p-2 text-sm border border-slate-200 rounded font-semibold text-red-600 focus:bg-white bg-white/50" placeholder="0.00">
                                     </div>
+                                </div>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <input type="checkbox" id="strike-${index}-${pIndex}" ${p.strikeOldPrice !== false ? 'checked' : ''} onchange="updateProduct(${index}, ${pIndex}, 'strikeOldPrice', this.checked)" class="w-4 h-4 rounded border-slate-300 text-red-600 focus:ring-red-500">
+                                    <label for="strike-${index}-${pIndex}" class="text-[10px] font-bold text-slate-500 uppercase">Strikethrough old price</label>
                                 </div>
                             </div>
                         </div>
@@ -374,7 +395,7 @@
             id: 'sec_' + Date.now(),
             type: type,
             data: type === 'spotlight' 
-                ? { title: "New Spotlight", subtext: "Description here", image: "https://images.unsplash.com/photo-1595225476474-87563907a212?w=1600&q=80" }
+                ? { title: "New Spotlight", subtext: "Description here", mediaType: "image", media: "https://images.unsplash.com/photo-1595225476474-87563907a212?w=1600&q=80" }
                 : { title: "New Collection", gridColumns: 0, products: [
                     { name: "New Product", oldPrice: 0, newPrice: 0, image: "https://via.placeholder.com/400" }
                 ]}
@@ -396,6 +417,7 @@
             name: "New Product",
             oldPrice: 100,
             newPrice: 99,
+            badge: "",
             image: "https://via.placeholder.com/400",
             link: "#"
         });

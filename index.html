@@ -24,6 +24,11 @@
             font-family: 'Inter', sans-serif;
         }
 
+        /* Prevent default inline-image baseline gap below the hero banner */
+        header img {
+            display: block;
+        }
+
         .snowflake {
             position: absolute;
             top: -10px;
@@ -98,6 +103,46 @@
             background: radial-gradient(circle at 50% 100%, #005832 10px, transparent 10px) 0 0 / 20px 12px repeat-x;
             height: 12px;
         }
+
+        /* Discount tag badge */
+        .discount-tag {
+            position: absolute;
+            top: 32px;
+            left: 0px;
+            z-index: 20;
+            animation: tag-pulse 2s ease-in-out infinite;
+        }
+        .discount-tag-inner {
+            background: linear-gradient(135deg, #b91c1c 0%, #dc2626 50%, #b91c1c 100%);
+            color: white;
+            padding: 6px 12px 6px 10px;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            border-radius: 0 4px 4px 0;
+            box-shadow: 2px 2px 6px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        .discount-tag-inner::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -6px;
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-top: 6px solid #7f1d1d;
+        }
+        .discount-tag-inner::after {
+            content: '';
+            position: absolute;
+            right: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: 8px solid transparent;
+            border-left: 8px solid #dc2626;
+        }
+        
     </style>
 </head>
 
@@ -121,17 +166,19 @@
         </div>
     </nav>
 
-    <header class="relative h-[90vh] flex flex-col justify-center items-center text-center px-6 overflow-hidden">
-        <div id="snow-container" class="absolute inset-0 pointer-events-none z-0"></div>
-        <div class="santa-track opacity-20">
-            <svg width="150" height="60" viewBox="0 0 200 100" fill="currentColor" class="text-slate-300">
-                <path
-                    d="M10,50 Q30,40 50,50 T90,50 T130,50 L140,40 L160,40 L160,50 L180,50 L180,60 L140,60 L130,50 Z M145,40 L145,30 M155,40 L155,30" />
-            </svg>
-        </div>
-
-        <!-- Santa Silhouette -->
-        <div class="santa-container">
+    <header class="relative mt-16 overflow-hidden">
+        <!-- Background Image - Desktop -->
+        <img id="hero-banner-desktop" src="heromain.png" 
+            alt="Meckeys Christmas Sale 2025" class="hidden md:block w-full">
+        <!-- Background Image - Mobile -->
+        <img id="hero-banner-mobile" src="https://mks.blr1.cdn.digitaloceanspaces.com/christmas-2025/heromain-mobile.webp" 
+            alt="Meckeys Christmas Sale 2025" class="md:hidden w-full">
+        
+        <!-- Snow overlay -->
+        <div id="snow-container" class="absolute inset-0 pointer-events-none z-10"></div>
+        
+        <!-- Santa Silhouette overlay -->
+        <div class="santa-container z-10">
             <svg width="180" height="80" viewBox="0 0 180 80" fill="currentColor" class="text-slate-400">
                 <!-- Santa on Sleigh -->
                 <ellipse cx="45" cy="50" rx="20" ry="12" />
@@ -157,20 +204,9 @@
                 <line x1="135" y1="42" x2="147" y2="40" stroke="currentColor" stroke-width="1.5" />
             </svg>
         </div>
-        <div class="relative z-10 max-w-4xl mx-auto mt-16">
-            <span
-                class="inline-block py-1 px-3 rounded-full bg-red-50 text-red-600 text-xs font-semibold tracking-wide uppercase mb-6">Holiday
-                Season 2025</span>
-            <h1 id="hero-title"
-                class="text-5xl md:text-7xl font-light tracking-tight text-slate-900 mb-6 leading-[1.1]"></h1>
-            <p id="hero-subtitle" class="text-lg md:text-xl text-slate-500 font-light max-w-2xl mx-auto mb-10"></p>
-            <a href="#shop"
-                class="inline-flex items-center justify-center px-8 py-4 bg-red-600 text-white text-sm font-medium rounded-full hover:bg-red-700 transition-all shadow-lg shadow-red-600/20">Explore
-                Now</a>
-        </div>
     </header>
 
-    <main id="dynamic-content" class="w-full bg-[#861c19] relative z-10 pb-20"></main>
+    <main id="dynamic-content" class="w-full bg-[#861c19] relative z-10 pt-0"></main>
 
     <footer class="bg-slate-50 border-t border-slate-200 py-20 px-6">
         <div class="max-w-7xl mx-auto text-center">
@@ -181,22 +217,23 @@
 
     <script>
         // --- API Configuration ---
-        const API_URL = 'https://meckeyschristmas2025.vercel.app/api'; // Change this to your Railway URL
+        const API_URL = 'https://meckeyschristmas2025.vercel.app/api';
 
         // --- Default Data (fallback) ---
+        // Spotlight mediaType can be 'image' or 'video'. Use 'media' for the URL.
         const defaultData = {
             hero: { title: "Precision meets \nPerfection.", subtitle: "Upgrade your workspace with our limited winter collection." },
             sections: [
                 {
                     id: 'sec_1', type: 'spotlight',
-                    data: { title: "The Moonlight Series", subtext: "Typing Nirvana.", image: "https://images.unsplash.com/photo-1595225476474-87563907a212?w=1600&q=80" }
+                    data: { title: "The Moonlight Series", subtext: "Typing Nirvana.", mediaType: "image", media: "https://images.unsplash.com/photo-1595225476474-87563907a212?w=1600&q=80" }
                 },
                 {
                     id: 'sec_2', type: 'grid',
                     data: {
                         title: "Blockbuster Deals", gridColumns: 0, products: [
-                            { name: "Keychron Q1", oldPrice: 220, newPrice: 189, image: "https://images.unsplash.com/photo-1587829741301-dc798b91a603?w=800&q=80", link: "#" },
-                            { name: "GMMK Pro", oldPrice: 349, newPrice: 299, image: "https://images.unsplash.com/photo-1626218174397-cc7b47570180?w=800&q=80", link: "#" }
+                            { name: "Keychron Q1", oldPrice: 220, newPrice: 189, badge: "60% OFF", image: "https://images.unsplash.com/photo-1587829741301-dc798b91a603?w=800&q=80", link: "#" },
+                            { name: "GMMK Pro", oldPrice: 349, newPrice: 299, badge: "40% OFF", image: "https://images.unsplash.com/photo-1626218174397-cc7b47570180?w=800&q=80", link: "#" }
                         ]
                     }
                 }
@@ -219,20 +256,29 @@
         async function renderPage() {
             const appData = await fetchPageData();
 
-            // --- Render Hero ---
-            document.getElementById('hero-title').innerHTML = appData.hero.title.replace(/\n/g, "<br/>");
-            document.getElementById('hero-subtitle').textContent = appData.hero.subtitle;
-
             // --- Render Sections ---
             const container = document.getElementById('dynamic-content');
 
             appData.sections.forEach(section => {
                 if (section.type === 'spotlight') {
                     const el = document.createElement('section');
-                    el.className = "w-full min-h-[90vh] relative flex items-center bg-slate-900 text-white overflow-hidden my-12";
+                    el.className = "w-full min-h-[90vh] relative flex items-center bg-slate-900 text-white overflow-hidden";
+                    
+                    // Support both video and image backgrounds
+                    // Use 'media' field (fallback to legacy 'image' field for backwards compatibility)
+                    const mediaSrc = section.data.media || section.data.image;
+                    const mediaType = section.data.mediaType || 'image';
+                    
+                    let mediaHtml;
+                    if (mediaType === 'video') {
+                        mediaHtml = `<video src="${mediaSrc}" class="w-full h-full object-cover opacity-60" autoplay loop muted playsinline></video>`;
+                    } else {
+                        mediaHtml = `<img src="${mediaSrc}" class="w-full h-full object-cover opacity-60">`;
+                    }
+                    
                     el.innerHTML = `
                     <div class="absolute inset-0">
-                        <img src="${section.data.image}" class="w-full h-full object-cover opacity-60">
+                        ${mediaHtml}
                         <div class="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent"></div>
                     </div>
                     <div class="relative z-10 max-w-7xl mx-auto px-6 w-full pt-20">
@@ -263,8 +309,20 @@
                         6: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6'
                     }[gridCols] || 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4';
 
-                    const productsHtml = section.data.products.map(p => `
-                    <a href="${p.link || '#'}" class="group h-[450px] flex flex-col" target="_blank" rel="noopener noreferrer">
+                    const productsHtml = section.data.products.map(p => {
+                        // Discount tag HTML (only show if badge text exists)
+                        const badgeHtml = p.badge ? `
+                            <div class="discount-tag">
+                                <div class="discount-tag-inner">${p.badge}</div>
+                            </div>
+                        ` : '';
+                        
+                        // Strikethrough old price (default: true for backwards compatibility)
+                        const strikeClass = p.strikeOldPrice !== false ? 'line-through' : '';
+                        
+                        return `
+                    <a href="${p.link || '#'}" class="group h-[450px] flex flex-col relative" target="_blank" rel="noopener noreferrer">
+                        ${badgeHtml}
                         <!-- Green scalloped top edge (half circles) -->
                         <div class="scallop-top-green flex-shrink-0"></div>
                         
@@ -280,12 +338,13 @@
                             <h3 class="text-white text-lg font-medium mt-5 tracking-wide line-clamp-1">${p.name}</h3>
                             <div class='flex justify-start items-center gap-2'>
                                 <h3 class="text-white text-3xl font-semibold tracking-wide">₹${p.newPrice}</h3>
-                                <h3 class="text-white text-sm font-regular tracking-tight line-through">₹${p.oldPrice}</h3>
+                                <h3 class="text-white text-sm font-regular tracking-tight ${strikeClass}">₹${p.oldPrice}</h3>
                             </div>
                             </div>
                         </div>
                     </a>
-                `).join('');
+                `;
+                    }).join('');
                     el.innerHTML = `
                     <div id="${snowId}" class="absolute inset-0 pointer-events-none z-0"></div>
                     <h2 class="text-5xl md:text-6xl font-bold tracking-tight text-gold-gradient mb-12  relative z-10" style="font-family: 'Old Standard TT', serif;">${section.data.title}</h2>
