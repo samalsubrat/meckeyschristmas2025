@@ -83,6 +83,16 @@
         </div>
       </section>
       
+      <!-- Collapse/Expand Controls -->
+      <div class="flex justify-end gap-2 mb-2">
+        <button onclick="collapseAllSections()" class="text-xs font-medium text-slate-500 hover:text-slate-700 px-3 py-1 rounded hover:bg-slate-100 transition-colors">
+          ▲ Collapse All
+        </button>
+        <button onclick="expandAllSections()" class="text-xs font-medium text-slate-500 hover:text-slate-700 px-3 py-1 rounded hover:bg-slate-100 transition-colors">
+          ▼ Expand All
+        </button>
+      </div>
+      
       <div id="sections-container" class="space-y-6">
         </div>
 
@@ -256,16 +266,24 @@
             el.setAttribute('draggable', 'true');
             el.dataset.index = index;
 
-            // Header for the Section Card
+            // Get section title for display
+            const sectionTitle = section.data.title || (section.type === 'grid' ? 'Product Grid' : 'Spotlight');
+            const sectionTypeLabel = section.type === 'grid' ? 'Product Grid' : 'Spotlight Hero';
+
+            // Header for the Section Card (clickable to collapse/expand)
             const headerHtml = `
-                <div class="bg-slate-50 px-6 py-3 border-b border-slate-200 flex items-center justify-between">
+                <div class="bg-slate-50 px-6 py-3 border-b border-slate-200 flex items-center justify-between cursor-pointer select-none" onclick="toggleSection(${index})">
                     <div class="flex items-center gap-3">
-                        <div class="drag-handle cursor-grab p-1 hover:bg-slate-200 rounded text-slate-400">
+                        <div class="drag-handle cursor-grab p-1 hover:bg-slate-200 rounded text-slate-400" onclick="event.stopPropagation()">
                              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path></svg>
                         </div>
-                        <span class="text-xs font-bold uppercase tracking-wide text-slate-500">${section.type === 'grid' ? 'Product Grid' : 'Spotlight Hero'}</span>
+                        <span class="text-xs font-bold uppercase tracking-wide text-slate-500">${sectionTypeLabel}</span>
+                        <span class="text-sm font-medium text-slate-700 truncate max-w-[200px]">${sectionTitle}</span>
                     </div>
-                    <button onclick="deleteSection(${index})" class="text-red-500 hover:text-red-700 text-xs font-medium uppercase tracking-wide">Remove Section</button>
+                    <div class="flex items-center gap-3">
+                        <svg class="section-chevron w-5 h-5 text-slate-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        <button onclick="event.stopPropagation(); deleteSection(${index})" class="text-red-500 hover:text-red-700 text-xs font-medium uppercase tracking-wide">Remove</button>
+                    </div>
                 </div>
             `;
 
@@ -380,12 +398,54 @@
                 </div>`;
             }
 
-            el.innerHTML = headerHtml + contentHtml;
+            // Wrap content in collapsible container
+            const isCollapsed = collapsedSections.has(index);
+            const wrappedContent = `<div class="section-content ${isCollapsed ? 'hidden' : ''}" data-section-index="${index}">${contentHtml}</div>`;
+            
+            el.innerHTML = headerHtml + wrappedContent;
+            
+            // Update chevron rotation if collapsed
+            if (isCollapsed) {
+                const chevron = el.querySelector('.section-chevron');
+                if (chevron) chevron.style.transform = 'rotate(-90deg)';
+            }
+            
             container.appendChild(el);
 
             // Add Drag Events
             addDragEvents(el);
         });
+    }
+    
+    // Track collapsed sections
+    const collapsedSections = new Set();
+    
+    function toggleSection(index) {
+        if (collapsedSections.has(index)) {
+            collapsedSections.delete(index);
+        } else {
+            collapsedSections.add(index);
+        }
+        
+        const content = document.querySelector(`.section-content[data-section-index="${index}"]`);
+        const chevron = content?.parentElement.querySelector('.section-chevron');
+        
+        if (content) {
+            content.classList.toggle('hidden');
+        }
+        if (chevron) {
+            chevron.style.transform = collapsedSections.has(index) ? 'rotate(-90deg)' : 'rotate(0deg)';
+        }
+    }
+    
+    function collapseAllSections() {
+        appData.sections.forEach((_, index) => collapsedSections.add(index));
+        renderAll();
+    }
+    
+    function expandAllSections() {
+        collapsedSections.clear();
+        renderAll();
     }
 
     // --- State Management ---
