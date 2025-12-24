@@ -283,7 +283,7 @@
                         `;
                     } else {
                         // Overlay layout - original background image/video with text overlay
-                        el.className = "w-full min-h-[90vh] relative flex items-center bg-slate-900 text-white overflow-hidden";
+                        el.className = "w-full min-h-[60vh] md:min-h-[90vh] relative flex items-center bg-slate-900 text-white overflow-hidden";
                         
                         // Support both video and image backgrounds
                         // Use 'media' field (fallback to legacy 'image' field for backwards compatibility)
@@ -326,7 +326,7 @@
                         1: 'grid-cols-1',
                         2: 'grid-cols-1 sm:grid-cols-2',
                         3: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
-                        4: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 lg:gap-7',
+                        4: 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 lg:gap-7',
                         5: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
                         6: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6'
                     }[gridCols] || 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4';
@@ -343,7 +343,7 @@
                         const strikeClass = p.strikeOldPrice !== false ? 'line-through' : '';
                         
                         return `
-                    <a href="${p.link || '#'}" class="group h-[450px] flex flex-col relative" target="_blank" rel="noopener noreferrer">
+                    <a href="${p.link || '#'}" class="group h-[350px] flex flex-col relative" target="_blank" rel="noopener noreferrer">
                         ${badgeHtml}
                         <!-- Green scalloped top edge (half circles) -->
                         <div class="scallop-top-green flex-shrink-0"></div>
@@ -351,7 +351,7 @@
                         <!-- Main card body with green background -->
                         <div class="bg-[#005832] p-3 flex-1 flex flex-col overflow-hidden">
                             <!-- White rounded image container -->
-                            <div class="bg-white rounded-2xl overflow-hidden h-[320px] flex-shrink-0">
+                            <div class="bg-white rounded-2xl overflow-hidden h-[220px] flex-shrink-0">
                                 <img src="${p.image}" alt="${p.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                             </div>
                             
@@ -370,7 +370,7 @@
                     el.innerHTML = `
                     <div id="${snowId}" class="absolute inset-0 pointer-events-none z-0"></div>
                     <h2 class="text-5xl md:text-6xl font-bold tracking-tight text-gold-gradient mb-12  relative z-10" style="font-family: 'Old Standard TT', serif;">${section.data.title}</h2>
-                    <div class="grid ${gridColsClass} gap-8 relative z-10 items-start">${productsHtml}</div>
+                    <div class="grid ${gridColsClass} gap-x-2 md:gap-x-8 gap-y-4 relative z-10 items-start">${productsHtml}</div>
                 `;
                     container.appendChild(el);
 
