@@ -264,6 +264,9 @@ app.get('/api/page-data', async (req, res) => {
                             name: p.name,
                             oldPrice: parseFloat(p.old_price),
                             newPrice: parseFloat(p.new_price),
+                            badge: p.badge || '',
+                            strikeOldPrice: p.strike_old_price !== false,
+                            showOldPrice: p.show_old_price !== false,
                             image: p.image,
                             link: p.link || '#'
                         }))
