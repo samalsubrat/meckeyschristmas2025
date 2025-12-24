@@ -297,6 +297,7 @@
                 const layoutType = section.data.layoutType || 'overlay';
                 const bannerDesktop = section.data.bannerDesktop || '';
                 const bannerMobile = section.data.bannerMobile || '';
+                const spotlightLink = section.data.link || '';
                 
                 contentHtml = `
                 <div class="p-6 space-y-4">
@@ -306,6 +307,12 @@
                             <option value="overlay" ${layoutType === 'overlay' ? 'selected' : ''}>Overlay (Background + Text)</option>
                             <option value="banner" ${layoutType === 'banner' ? 'selected' : ''}>Banner (Simple Image)</option>
                         </select>
+                    </div>
+                    
+                    <!-- Link Field (common for both layouts) -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">🔗 Link URL ${layoutType === 'overlay' ? '(Discover Button)' : '(Click on Banner)'}</label>
+                        <input type="url" value="${spotlightLink}" oninput="updateSectionData(${index}, 'link', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm font-mono text-slate-500" placeholder="https://meckeys.com/collection/...">
                     </div>
                     
                     ${layoutType === 'overlay' ? `
@@ -572,6 +579,7 @@
                 section.data.media = section.data.media || section.data.image || '';
                 section.data.bannerDesktop = section.data.bannerDesktop || '';
                 section.data.bannerMobile = section.data.bannerMobile || '';
+                section.data.link = section.data.link || '';
             }
             if (section.type === 'grid' && section.data.products) {
                 section.data.products.forEach(product => {

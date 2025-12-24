@@ -182,8 +182,9 @@ app.get('/api/sections', async (req, res) => {
                         media: data[0].media || data[0].image,
                         layoutType: data[0].layout_type || 'overlay',
                         bannerDesktop: data[0].banner_desktop || '',
-                        bannerMobile: data[0].banner_mobile || ''
-                    } : { title: '', subtext: '', image: '', mediaType: 'image', media: '', layoutType: 'overlay', bannerDesktop: '', bannerMobile: '' }
+                        bannerMobile: data[0].banner_mobile || '',
+                        link: data[0].link || ''
+                    } : { title: '', subtext: '', image: '', mediaType: 'image', media: '', layoutType: 'overlay', bannerDesktop: '', bannerMobile: '', link: '' }
                 };
             } else if (section.type === 'grid') {
                 const gridData = await sql`
@@ -248,8 +249,9 @@ app.get('/api/page-data', async (req, res) => {
                         media: data[0].media || data[0].image,
                         layoutType: data[0].layout_type || 'overlay',
                         bannerDesktop: data[0].banner_desktop || '',
-                        bannerMobile: data[0].banner_mobile || ''
-                    } : { title: '', subtext: '', image: '', mediaType: 'image', media: '', layoutType: 'overlay', bannerDesktop: '', bannerMobile: '' }
+                        bannerMobile: data[0].banner_mobile || '',
+                        link: data[0].link || ''
+                    } : { title: '', subtext: '', image: '', mediaType: 'image', media: '', layoutType: 'overlay', bannerDesktop: '', bannerMobile: '', link: '' }
                 };
             } else if (section.type === 'grid') {
                 const gridData = await sql`
@@ -311,8 +313,8 @@ app.post('/api/sections', authenticateToken, async (req, res) => {
         // Insert default data based on type
         if (type === 'spotlight') {
             await sql`
-                INSERT INTO spotlight_data (section_id, title, subtext, image, media_type, media, layout_type, banner_desktop, banner_mobile)
-                VALUES (${sectionId}, 'New Spotlight', 'Description here', 'https://images.unsplash.com/photo-1595225476474-87563907a212?w=1600&q=80', 'image', 'https://images.unsplash.com/photo-1595225476474-87563907a212?w=1600&q=80', 'overlay', '', '')
+                INSERT INTO spotlight_data (section_id, title, subtext, image, media_type, media, layout_type, banner_desktop, banner_mobile, link)
+                VALUES (${sectionId}, 'New Spotlight', 'Description here', 'https://images.unsplash.com/photo-1595225476474-87563907a212?w=1600&q=80', 'image', 'https://images.unsplash.com/photo-1595225476474-87563907a212?w=1600&q=80', 'overlay', '', '', '')
             `;
         } else if (type === 'grid') {
             const gridResult = await sql`
@@ -371,7 +373,7 @@ app.delete('/api/sections/:id', authenticateToken, async (req, res) => {
 app.put('/api/spotlight/:sectionId', authenticateToken, async (req, res) => {
     try {
         const { sectionId } = req.params;
-        const { title, subtext, image, mediaType, media, layoutType, bannerDesktop, bannerMobile } = req.body;
+        const { title, subtext, image, mediaType, media, layoutType, bannerDesktop, bannerMobile, link } = req.body;
         
         const result = await sql`
             UPDATE spotlight_data 
@@ -383,6 +385,7 @@ app.put('/api/spotlight/:sectionId', authenticateToken, async (req, res) => {
                 layout_type = ${layoutType || 'overlay'},
                 banner_desktop = ${bannerDesktop || ''},
                 banner_mobile = ${bannerMobile || ''},
+                link = ${link || ''},
                 updated_at = CURRENT_TIMESTAMP
             WHERE section_id = ${sectionId}
             RETURNING *
@@ -522,8 +525,8 @@ app.post('/api/save-all', authenticateToken, async (req, res) => {
 
             if (section.type === 'spotlight') {
                 await sql`
-                    INSERT INTO spotlight_data (section_id, title, subtext, image, media_type, media, layout_type, banner_desktop, banner_mobile)
-                    VALUES (${section.id}, ${section.data.title}, ${section.data.subtext}, ${section.data.media || section.data.image}, ${section.data.mediaType || 'image'}, ${section.data.media || section.data.image}, ${section.data.layoutType || 'overlay'}, ${section.data.bannerDesktop || ''}, ${section.data.bannerMobile || ''})
+                    INSERT INTO spotlight_data (section_id, title, subtext, image, media_type, media, layout_type, banner_desktop, banner_mobile, link)
+                    VALUES (${section.id}, ${section.data.title}, ${section.data.subtext}, ${section.data.media || section.data.image}, ${section.data.mediaType || 'image'}, ${section.data.media || section.data.image}, ${section.data.layoutType || 'overlay'}, ${section.data.bannerDesktop || ''}, ${section.data.bannerMobile || ''}, ${section.data.link || ''})
                 `;
             } else if (section.type === 'grid') {
                 const gridResult = await sql`
