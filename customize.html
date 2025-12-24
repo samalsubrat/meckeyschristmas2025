@@ -357,9 +357,15 @@
                                         <input type="number" value="${p.newPrice}" oninput="updateProduct(${index}, ${pIndex}, 'newPrice', this.value)" class="w-full p-2 text-sm border border-slate-200 rounded font-semibold text-red-600 focus:bg-white bg-white/50" placeholder="0.00">
                                     </div>
                                 </div>
-                                <div class="flex items-center gap-2 mt-1">
-                                    <input type="checkbox" id="strike-${index}-${pIndex}" ${p.strikeOldPrice !== false ? 'checked' : ''} onchange="updateProduct(${index}, ${pIndex}, 'strikeOldPrice', this.checked)" class="w-4 h-4 rounded border-slate-300 text-red-600 focus:ring-red-500">
-                                    <label for="strike-${index}-${pIndex}" class="text-[10px] font-bold text-slate-500 uppercase">Strikethrough old price</label>
+                                <div class="flex items-center gap-4 mt-1">
+                                    <div class="flex items-center gap-2">
+                                        <input type="checkbox" id="showOld-${index}-${pIndex}" ${p.showOldPrice !== false ? 'checked' : ''} onchange="updateProduct(${index}, ${pIndex}, 'showOldPrice', this.checked)" class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                        <label for="showOld-${index}-${pIndex}" class="text-[10px] font-bold text-slate-500 uppercase">Show old price</label>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <input type="checkbox" id="strike-${index}-${pIndex}" ${p.strikeOldPrice !== false ? 'checked' : ''} onchange="updateProduct(${index}, ${pIndex}, 'strikeOldPrice', this.checked)" class="w-4 h-4 rounded border-slate-300 text-red-600 focus:ring-red-500">
+                                        <label for="strike-${index}-${pIndex}" class="text-[10px] font-bold text-slate-500 uppercase">Strikethrough</label>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -478,6 +484,8 @@
             oldPrice: 100,
             newPrice: 99,
             badge: "",
+            strikeOldPrice: true,
+            showOldPrice: true,
             image: "https://via.placeholder.com/400",
             link: "#"
         });
@@ -522,6 +530,8 @@
                     product.newPrice = parseFloat(product.newPrice) || 0;
                     // Ensure strikeOldPrice is a boolean
                     product.strikeOldPrice = product.strikeOldPrice !== false;
+                    // Ensure showOldPrice is a boolean (defaults to true)
+                    product.showOldPrice = product.showOldPrice !== false;
                     // Ensure badge is a string
                     product.badge = product.badge || '';
                 });

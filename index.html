@@ -343,7 +343,7 @@
                             <h3 class="text-white text-lg font-medium mt-5 tracking-wide line-clamp-1">${p.name}</h3>
                             <div class='flex justify-start items-center gap-2'>
                                 <h3 class="text-white text-3xl font-semibold tracking-wide">₹${p.newPrice}</h3>
-                                <h3 class="text-white text-sm font-regular tracking-tight ${strikeClass}">₹${p.oldPrice}</h3>
+                                ${p.showOldPrice !== false ? `<h3 class="text-white text-sm font-regular tracking-tight ${strikeClass}">₹${p.oldPrice}</h3>` : ''}
                             </div>
                             </div>
                         </div>

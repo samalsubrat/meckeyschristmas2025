@@ -203,6 +203,7 @@ app.get('/api/sections', async (req, res) => {
                             newPrice: parseFloat(p.new_price),
                             badge: p.badge || '',
                             strikeOldPrice: p.strike_old_price !== false,
+                            showOldPrice: p.show_old_price !== false,
                             image: p.image,
                             link: p.link || '#'
                         }))
@@ -517,8 +518,8 @@ app.post('/api/save-all', authenticateToken, async (req, res) => {
                 for (let j = 0; j < section.data.products.length; j++) {
                     const product = section.data.products[j];
                     await sql`
-                        INSERT INTO products (grid_id, name, old_price, new_price, image, link, badge, strike_old_price, sort_order)
-                        VALUES (${gridResult[0].id}, ${product.name}, ${product.oldPrice}, ${product.newPrice}, ${product.image}, ${product.link || '#'}, ${product.badge || ''}, ${product.strikeOldPrice !== false}, ${j})
+                        INSERT INTO products (grid_id, name, old_price, new_price, image, link, badge, strike_old_price, show_old_price, sort_order)
+                        VALUES (${gridResult[0].id}, ${product.name}, ${product.oldPrice}, ${product.newPrice}, ${product.image}, ${product.link || '#'}, ${product.badge || ''}, ${product.strikeOldPrice !== false}, ${product.showOldPrice !== false}, ${j})
                     `;
                 }
             }
