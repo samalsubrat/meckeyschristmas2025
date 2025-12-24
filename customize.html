@@ -294,28 +294,57 @@
                 // Support both new 'media' field and legacy 'image' field
                 const mediaSrc = section.data.media || section.data.image || '';
                 const mediaType = section.data.mediaType || 'image';
+                const layoutType = section.data.layoutType || 'overlay';
+                const bannerDesktop = section.data.bannerDesktop || '';
+                const bannerMobile = section.data.bannerMobile || '';
                 
                 contentHtml = `
                 <div class="p-6 space-y-4">
                     <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Layout Type</label>
+                        <select id="layout-type-${index}" onchange="updateSectionData(${index}, 'layoutType', this.value); renderAll();" class="w-full px-3 py-2 border border-slate-200 rounded text-sm bg-white">
+                            <option value="overlay" ${layoutType === 'overlay' ? 'selected' : ''}>Overlay (Background + Text)</option>
+                            <option value="banner" ${layoutType === 'banner' ? 'selected' : ''}>Banner (Simple Image)</option>
+                        </select>
+                    </div>
+                    
+                    ${layoutType === 'overlay' ? `
+                    <!-- Overlay Layout Fields -->
+                    <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Heading</label>
                         <input type="text" value="${section.data.title}" oninput="updateSectionData(${index}, 'title', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm">
                     </div>
-                     <div>
+                    <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Subtext</label>
                         <input type="text" value="${section.data.subtext}" oninput="updateSectionData(${index}, 'subtext', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Background Type</label>
-                        <select onchange="updateSectionData(${index}, 'mediaType', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm bg-white">
+                        <select onchange="updateSectionData(${index}, 'mediaType', this.value); renderAll();" class="w-full px-3 py-2 border border-slate-200 rounded text-sm bg-white">
                             <option value="image" ${mediaType === 'image' ? 'selected' : ''}>Image</option>
                             <option value="video" ${mediaType === 'video' ? 'selected' : ''}>Video (MP4)</option>
                         </select>
                     </div>
-                     <div>
+                    <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">${mediaType === 'video' ? 'Video' : 'Image'} URL</label>
                         <input type="text" value="${mediaSrc}" oninput="updateSectionData(${index}, 'media', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm font-mono text-slate-500" placeholder="${mediaType === 'video' ? 'https://example.com/video.mp4' : 'https://example.com/image.jpg'}">
                     </div>
+                    ` : `
+                    <!-- Banner Layout Fields -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Alt Text / Title</label>
+                        <input type="text" value="${section.data.title}" oninput="updateSectionData(${index}, 'title', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm" placeholder="Banner description for accessibility">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Desktop Banner Image URL</label>
+                        <input type="text" value="${bannerDesktop}" oninput="updateSectionData(${index}, 'bannerDesktop', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm font-mono text-slate-500" placeholder="https://example.com/banner-desktop.png">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Mobile Banner Image URL</label>
+                        <input type="text" value="${bannerMobile}" oninput="updateSectionData(${index}, 'bannerMobile', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded text-sm font-mono text-slate-500" placeholder="https://example.com/banner-mobile.png">
+                        <p class="text-xs text-slate-400 mt-1">Leave empty to use desktop image on mobile</p>
+                    </div>
+                    `}
                 </div>`;
             } else if (section.type === 'grid') {
                 const productsHtml = section.data.products.map((p, pIndex) => `

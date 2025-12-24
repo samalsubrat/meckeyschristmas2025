@@ -179,8 +179,11 @@ app.get('/api/sections', async (req, res) => {
                         subtext: data[0].subtext,
                         image: data[0].image,
                         mediaType: data[0].media_type || 'image',
-                        media: data[0].media || data[0].image
-                    } : { title: '', subtext: '', image: '', mediaType: 'image', media: '' }
+                        media: data[0].media || data[0].image,
+                        layoutType: data[0].layout_type || 'overlay',
+                        bannerDesktop: data[0].banner_desktop || '',
+                        bannerMobile: data[0].banner_mobile || ''
+                    } : { title: '', subtext: '', image: '', mediaType: 'image', media: '', layoutType: 'overlay', bannerDesktop: '', bannerMobile: '' }
                 };
             } else if (section.type === 'grid') {
                 const gridData = await sql`
@@ -242,8 +245,11 @@ app.get('/api/page-data', async (req, res) => {
                         subtext: data[0].subtext,
                         image: data[0].image,
                         mediaType: data[0].media_type || 'image',
-                        media: data[0].media || data[0].image
-                    } : { title: '', subtext: '', image: '', mediaType: 'image', media: '' }
+                        media: data[0].media || data[0].image,
+                        layoutType: data[0].layout_type || 'overlay',
+                        bannerDesktop: data[0].banner_desktop || '',
+                        bannerMobile: data[0].banner_mobile || ''
+                    } : { title: '', subtext: '', image: '', mediaType: 'image', media: '', layoutType: 'overlay', bannerDesktop: '', bannerMobile: '' }
                 };
             } else if (section.type === 'grid') {
                 const gridData = await sql`
@@ -305,8 +311,8 @@ app.post('/api/sections', authenticateToken, async (req, res) => {
         // Insert default data based on type
         if (type === 'spotlight') {
             await sql`
-                INSERT INTO spotlight_data (section_id, title, subtext, image, media_type, media)
-                VALUES (${sectionId}, 'New Spotlight', 'Description here', 'https://images.unsplash.com/photo-1595225476474-87563907a212?w=1600&q=80', 'image', 'https://images.unsplash.com/photo-1595225476474-87563907a212?w=1600&q=80')
+                INSERT INTO spotlight_data (section_id, title, subtext, image, media_type, media, layout_type, banner_desktop, banner_mobile)
+                VALUES (${sectionId}, 'New Spotlight', 'Description here', 'https://images.unsplash.com/photo-1595225476474-87563907a212?w=1600&q=80', 'image', 'https://images.unsplash.com/photo-1595225476474-87563907a212?w=1600&q=80', 'overlay', '', '')
             `;
         } else if (type === 'grid') {
             const gridResult = await sql`
@@ -365,11 +371,19 @@ app.delete('/api/sections/:id', authenticateToken, async (req, res) => {
 app.put('/api/spotlight/:sectionId', authenticateToken, async (req, res) => {
     try {
         const { sectionId } = req.params;
-        const { title, subtext, image } = req.body;
+        const { title, subtext, image, mediaType, media, layoutType, bannerDesktop, bannerMobile } = req.body;
         
         const result = await sql`
             UPDATE spotlight_data 
-            SET title = ${title}, subtext = ${subtext}, image = ${image}, updated_at = CURRENT_TIMESTAMP
+            SET title = ${title}, 
+                subtext = ${subtext}, 
+                image = ${media || image}, 
+                media_type = ${mediaType || 'image'},
+                media = ${media || image},
+                layout_type = ${layoutType || 'overlay'},
+                banner_desktop = ${bannerDesktop || ''},
+                banner_mobile = ${bannerMobile || ''},
+                updated_at = CURRENT_TIMESTAMP
             WHERE section_id = ${sectionId}
             RETURNING *
         `;
@@ -508,8 +522,8 @@ app.post('/api/save-all', authenticateToken, async (req, res) => {
 
             if (section.type === 'spotlight') {
                 await sql`
-                    INSERT INTO spotlight_data (section_id, title, subtext, image, media_type, media)
-                    VALUES (${section.id}, ${section.data.title}, ${section.data.subtext}, ${section.data.media || section.data.image}, ${section.data.mediaType || 'image'}, ${section.data.media || section.data.image})
+                    INSERT INTO spotlight_data (section_id, title, subtext, image, media_type, media, layout_type, banner_desktop, banner_mobile)
+                    VALUES (${section.id}, ${section.data.title}, ${section.data.subtext}, ${section.data.media || section.data.image}, ${section.data.mediaType || 'image'}, ${section.data.media || section.data.image}, ${section.data.layoutType || 'overlay'}, ${section.data.bannerDesktop || ''}, ${section.data.bannerMobile || ''})
                 `;
             } else if (section.type === 'grid') {
                 const gridResult = await sql`

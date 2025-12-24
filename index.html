@@ -267,31 +267,48 @@
             appData.sections.forEach(section => {
                 if (section.type === 'spotlight') {
                     const el = document.createElement('section');
-                    el.className = "w-full min-h-[90vh] relative flex items-center bg-slate-900 text-white overflow-hidden";
                     
-                    // Support both video and image backgrounds
-                    // Use 'media' field (fallback to legacy 'image' field for backwards compatibility)
-                    const mediaSrc = section.data.media || section.data.image;
-                    const mediaType = section.data.mediaType || 'image';
+                    // Check spotlight layout type: 'overlay' (default) or 'banner'
+                    const layoutType = section.data.layoutType || 'overlay';
                     
-                    let mediaHtml;
-                    if (mediaType === 'video') {
-                        mediaHtml = `<video src="${mediaSrc}" class="w-full h-full object-cover opacity-60" autoplay loop muted playsinline></video>`;
+                    if (layoutType === 'banner') {
+                        // Banner layout - simple responsive images like hero
+                        el.className = "w-full";
+                        const desktopImage = section.data.bannerDesktop || section.data.media || section.data.image;
+                        const mobileImage = section.data.bannerMobile || desktopImage;
+                        
+                        el.innerHTML = `
+                            <img src="${desktopImage}" alt="${section.data.title}" class="hidden md:block w-full">
+                            <img src="${mobileImage}" alt="${section.data.title}" class="md:hidden w-full">
+                        `;
                     } else {
-                        mediaHtml = `<img src="${mediaSrc}" class="w-full h-full object-cover opacity-60">`;
+                        // Overlay layout - original background image/video with text overlay
+                        el.className = "w-full min-h-[90vh] relative flex items-center bg-slate-900 text-white overflow-hidden";
+                        
+                        // Support both video and image backgrounds
+                        // Use 'media' field (fallback to legacy 'image' field for backwards compatibility)
+                        const mediaSrc = section.data.media || section.data.image;
+                        const mediaType = section.data.mediaType || 'image';
+                        
+                        let mediaHtml;
+                        if (mediaType === 'video') {
+                            mediaHtml = `<video src="${mediaSrc}" class="w-full h-full object-cover opacity-60" autoplay loop muted playsinline></video>`;
+                        } else {
+                            mediaHtml = `<img src="${mediaSrc}" class="w-full h-full object-cover opacity-60">`;
+                        }
+                        
+                        el.innerHTML = `
+                        <div class="absolute inset-0">
+                            ${mediaHtml}
+                            <div class="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent"></div>
+                        </div>
+                        <div class="relative z-10 max-w-7xl mx-auto px-6 w-full pt-20">
+                            <h2 class="text-5xl md:text-7xl font-semibold tracking-tight mb-6">${section.data.title}</h2>
+                            <p class="text-xl text-slate-300 font-light mb-10">${section.data.subtext}</p>
+                            <button class="px-8 py-4 bg-white text-slate-900 font-medium rounded-full hover:bg-slate-200">Discover</button>
+                        </div>
+                        `;
                     }
-                    
-                    el.innerHTML = `
-                    <div class="absolute inset-0">
-                        ${mediaHtml}
-                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent"></div>
-                    </div>
-                    <div class="relative z-10 max-w-7xl mx-auto px-6 w-full pt-20">
-                        <h2 class="text-5xl md:text-7xl font-semibold tracking-tight mb-6">${section.data.title}</h2>
-                        <p class="text-xl text-slate-300 font-light mb-10">${section.data.subtext}</p>
-                        <button class="px-8 py-4 bg-white text-slate-900 font-medium rounded-full hover:bg-slate-200">Discover</button>
-                    </div>
-                `;
                     container.appendChild(el);
                 } else if (section.type === 'grid') {
                     const el = document.createElement('section');
