@@ -531,6 +531,19 @@
 
     function updateSectionData(sectionIndex, key, value) {
         appData.sections[sectionIndex].data[key] = value;
+        
+        // When switching layout type, initialize the fields for that layout
+        if (key === 'layoutType') {
+            if (value === 'banner') {
+                // Initialize banner fields if they don't exist
+                if (!appData.sections[sectionIndex].data.bannerDesktop) {
+                    appData.sections[sectionIndex].data.bannerDesktop = '';
+                }
+                if (!appData.sections[sectionIndex].data.bannerMobile) {
+                    appData.sections[sectionIndex].data.bannerMobile = '';
+                }
+            }
+        }
     }
 
     function updateProduct(sectionIndex, productIndex, key, value) {
@@ -552,6 +565,14 @@
         // Sanitize data before sending - ensure numeric fields are numbers, not empty strings
         const sanitizedData = JSON.parse(JSON.stringify(appData));
         sanitizedData.sections.forEach(section => {
+            if (section.type === 'spotlight') {
+                // Ensure spotlight fields have proper defaults
+                section.data.layoutType = section.data.layoutType || 'overlay';
+                section.data.mediaType = section.data.mediaType || 'image';
+                section.data.media = section.data.media || section.data.image || '';
+                section.data.bannerDesktop = section.data.bannerDesktop || '';
+                section.data.bannerMobile = section.data.bannerMobile || '';
+            }
             if (section.type === 'grid' && section.data.products) {
                 section.data.products.forEach(product => {
                     // Ensure prices are numbers (default to 0 if empty)
